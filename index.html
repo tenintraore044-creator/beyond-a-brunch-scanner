@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BEYOND A BRUNCH - Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f5f1e8;
+    }
+    h2 { color: #526447; }
+    #reader { max-width: 400px; margin: auto; }
+    #result {
+      margin-top: 20px;
+      padding: 18px;
+      font-size: 20px;
+      font-weight: bold;
+      border-radius: 10px;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+  <h2>BEYOND A BRUNCH</h2>
+  <p>Scanner le billet du participant</p>
+  <div id="reader"></div>
+  <div id="result">Initialisation du scanner...</div>
+
+  <script>
+    const endpoint = "https://script.google.com/macros/s/AKfycbxyCHUQT_MlkopSxNco0Lt0QCuq6FiBXsHZrtSzSnzZHnbqc23XqVtZ5Hs3pFSmn2j8/exec";
+    let scanner;
+    let occupé = false;
+
+    function verifier(numero) {
+      window.recevoirResultat = function(reponse) {
+        document.getElementById("result").innerText = reponse;
+        document.getElementById("script-verification")?.remove();
+        setTimeout(() => {
+          occupé = false;
+          demarrer();
+        }, 3000);
+      };
+
+      const script = document.createElement("script");
+      script.id = "script-verification";
+      script.src = endpoint + "?ticket=" +
+        encodeURIComponent(numero) +
+        "&callback=recevoirResultat";
+      script.onerror = function() {
+        document.getElementById("result").innerText =
+          "Erreur de connexion au contrôle des billets";
+        occupé = false;
+      };
+      document.body.appendChild(script);
+    }
+
+    function demarrer() {
+      scanner = new Html5Qrcode("reader");
+      scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        function(texte) {
+          if (occupé) return;
+          occupé = true;
+          document.getElementById("result").innerText =
+            "Vérification en cours...";
+          scanner.stop().then(() => verifier(texte));
+        }
+      ).catch(erreur => {
+        document.getElementById("result").innerText =
+          "Caméra inaccessible : " + erreur;
+      });
+    }
+
+    demarrer();
+  </script>
+</body>
+</html>
